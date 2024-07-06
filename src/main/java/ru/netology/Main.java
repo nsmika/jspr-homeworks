@@ -12,6 +12,16 @@ public class Main {
         );
 
         Server server = new Server(9999, validPaths);
+
+        server.registerHandler("/messages", (request, out) -> {
+            String response = "HTTP/1.1 200 OK\r\n" +
+                    "Content-Length: 0\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+            out.write(response.getBytes());
+            out.flush();
+        });
+
         server.start();
     }
 }

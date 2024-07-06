@@ -9,7 +9,9 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -17,6 +19,7 @@ public class Server {
     final List<String> validPaths;
     private final int port;
     private final ExecutorService threadPool;
+    private final Map<String, Handler> handlers = new HashMap<>();
 
     public Server(int port, List<String> validPaths) {
         this.port = port;
@@ -33,6 +36,10 @@ public class Server {
         }
     }
 
+    public void registerHandler(String path, Handler handler) {
+        handlers.put(path, handler);
+    }
+
     private void handleClient(Socket clientSocket) {
         try (
                 clientSocket;
@@ -46,7 +53,19 @@ public class Server {
                 return;
             }
 
-            final var path = parts[1];
+            final var request = new Request(parts[1]);
+            final var path = request.getPath();
+
+            // Debug output to check query parameters
+            System.out.println("Query Params: " + request.getQueryParams());
+
+            // Check if there is a registered handler for the path
+            Handler handler = handlers.get(path);
+            if (handler != null) {
+                handler.handle(request, out);
+                return;
+            }
+
             if (!validPaths.contains(path)) {
                 out.write((
                         "HTTP/1.1 404 Not Found\r\n" +
